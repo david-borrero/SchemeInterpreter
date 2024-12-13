@@ -1,0 +1,4 @@
+(define (negat x)
+  (* x -1))
+
+(negat 5)
