@@ -29,6 +29,11 @@ class schemeVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by schemeParser#text.
+    def visitText(self, ctx:schemeParser.TextContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by schemeParser#llamada.
     def visitLlamada(self, ctx:schemeParser.LlamadaContext):
         return self.visitChildren(ctx)

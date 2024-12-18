@@ -1,4 +1,3 @@
-(define (negat x)
-  (* x -1))
-
-(negat 5)
+(if (> 3 2)
+    "si"
+    "no") 

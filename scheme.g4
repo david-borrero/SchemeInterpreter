@@ -6,18 +6,15 @@ root : expr+ EOF
 expr : OP                                              # op
      | NUM                                             # numero
      | ID                                              # identificador
+     | STRING                                          # text
      | '\''? '(' expr* ')'                             # llamada
      ;
 
 // Reglas para números
 NUM : ('+' | '-')? [0-9]+;
-
 OP : ('*' | '/' | '+' | '-' | '>' | '<' | '>=' | '<=' | '=' | '<>');
-
-// Reglas para identificadores
 ID : [a-zA-Z][a-zA-Z0-9]*;
-
-// Ignorar espacios en blanco
+STRING : '"' (~[\r\n"] | '""')* '"';
 WS : [ \t\r\n]+ -> skip;
 
 
