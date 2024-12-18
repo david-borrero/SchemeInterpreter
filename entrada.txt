@@ -1,3 +1,4 @@
-(if (> 3 2)
-    "si"
-    "no") 
+(let ((val1 (read))
+      (val2 (read)))
+  (display "La suma es: ")
+  (display (+ val1 val2)))

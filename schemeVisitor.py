@@ -34,6 +34,16 @@ class schemeVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by schemeParser#true.
+    def visitTrue(self, ctx:schemeParser.TrueContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by schemeParser#false.
+    def visitFalse(self, ctx:schemeParser.FalseContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by schemeParser#llamada.
     def visitLlamada(self, ctx:schemeParser.LlamadaContext):
         return self.visitChildren(ctx)

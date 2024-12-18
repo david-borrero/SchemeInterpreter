@@ -10,16 +10,17 @@ else:
 
 def serializedATN():
     return [
-        4,1,8,29,2,0,7,0,2,1,7,1,1,0,4,0,6,8,0,11,0,12,0,7,1,0,1,0,1,1,1,
-        1,1,1,1,1,1,1,3,1,17,8,1,1,1,1,1,5,1,21,8,1,10,1,12,1,24,9,1,1,1,
-        3,1,27,8,1,1,1,0,0,2,0,2,0,0,33,0,5,1,0,0,0,2,26,1,0,0,0,4,6,3,2,
-        1,0,5,4,1,0,0,0,6,7,1,0,0,0,7,5,1,0,0,0,7,8,1,0,0,0,8,9,1,0,0,0,
-        9,10,5,0,0,1,10,1,1,0,0,0,11,27,5,5,0,0,12,27,5,4,0,0,13,27,5,6,
-        0,0,14,27,5,7,0,0,15,17,5,1,0,0,16,15,1,0,0,0,16,17,1,0,0,0,17,18,
-        1,0,0,0,18,22,5,2,0,0,19,21,3,2,1,0,20,19,1,0,0,0,21,24,1,0,0,0,
-        22,20,1,0,0,0,22,23,1,0,0,0,23,25,1,0,0,0,24,22,1,0,0,0,25,27,5,
-        3,0,0,26,11,1,0,0,0,26,12,1,0,0,0,26,13,1,0,0,0,26,14,1,0,0,0,26,
-        16,1,0,0,0,27,3,1,0,0,0,4,7,16,22,26
+        4,1,10,31,2,0,7,0,2,1,7,1,1,0,4,0,6,8,0,11,0,12,0,7,1,0,1,0,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,3,1,19,8,1,1,1,1,1,5,1,23,8,1,10,1,12,1,
+        26,9,1,1,1,3,1,29,8,1,1,1,0,0,2,0,2,0,0,37,0,5,1,0,0,0,2,28,1,0,
+        0,0,4,6,3,2,1,0,5,4,1,0,0,0,6,7,1,0,0,0,7,5,1,0,0,0,7,8,1,0,0,0,
+        8,9,1,0,0,0,9,10,5,0,0,1,10,1,1,0,0,0,11,29,5,5,0,0,12,29,5,4,0,
+        0,13,29,5,6,0,0,14,29,5,7,0,0,15,29,5,8,0,0,16,29,5,9,0,0,17,19,
+        5,1,0,0,18,17,1,0,0,0,18,19,1,0,0,0,19,20,1,0,0,0,20,24,5,2,0,0,
+        21,23,3,2,1,0,22,21,1,0,0,0,23,26,1,0,0,0,24,22,1,0,0,0,24,25,1,
+        0,0,0,25,27,1,0,0,0,26,24,1,0,0,0,27,29,5,3,0,0,28,11,1,0,0,0,28,
+        12,1,0,0,0,28,13,1,0,0,0,28,14,1,0,0,0,28,15,1,0,0,0,28,16,1,0,0,
+        0,28,18,1,0,0,0,29,3,1,0,0,0,4,7,18,24,28
     ]
 
 class schemeParser ( Parser ):
@@ -32,10 +33,11 @@ class schemeParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'''", "'('", "')'" ]
+    literalNames = [ "<INVALID>", "'''", "'('", "')'", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'#t'", "'#f'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "NUM", "OP", "ID", "STRING", "WS" ]
+                      "NUM", "OP", "ID", "STRING", "TRUE", "FALSE", "WS" ]
 
     RULE_root = 0
     RULE_expr = 1
@@ -50,7 +52,9 @@ class schemeParser ( Parser ):
     OP=5
     ID=6
     STRING=7
-    WS=8
+    TRUE=8
+    FALSE=9
+    WS=10
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -106,7 +110,7 @@ class schemeParser ( Parser ):
                 self.state = 7 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 246) != 0)):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 1014) != 0)):
                     break
 
             self.state = 9
@@ -189,6 +193,38 @@ class schemeParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class TrueContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a schemeParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def TRUE(self):
+            return self.getToken(schemeParser.TRUE, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTrue" ):
+                return visitor.visitTrue(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class FalseContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a schemeParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def FALSE(self):
+            return self.getToken(schemeParser.FALSE, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitFalse" ):
+                return visitor.visitFalse(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class TextContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a schemeParser.ExprContext
@@ -228,7 +264,7 @@ class schemeParser ( Parser ):
         self.enterRule(localctx, 2, self.RULE_expr)
         self._la = 0 # Token type
         try:
-            self.state = 26
+            self.state = 28
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [5]:
@@ -255,30 +291,42 @@ class schemeParser ( Parser ):
                 self.state = 14
                 self.match(schemeParser.STRING)
                 pass
+            elif token in [8]:
+                localctx = schemeParser.TrueContext(self, localctx)
+                self.enterOuterAlt(localctx, 5)
+                self.state = 15
+                self.match(schemeParser.TRUE)
+                pass
+            elif token in [9]:
+                localctx = schemeParser.FalseContext(self, localctx)
+                self.enterOuterAlt(localctx, 6)
+                self.state = 16
+                self.match(schemeParser.FALSE)
+                pass
             elif token in [1, 2]:
                 localctx = schemeParser.LlamadaContext(self, localctx)
-                self.enterOuterAlt(localctx, 5)
-                self.state = 16
+                self.enterOuterAlt(localctx, 7)
+                self.state = 18
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if _la==1:
-                    self.state = 15
+                    self.state = 17
                     self.match(schemeParser.T__0)
 
 
-                self.state = 18
+                self.state = 20
                 self.match(schemeParser.T__1)
-                self.state = 22
+                self.state = 24
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & 246) != 0):
-                    self.state = 19
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & 1014) != 0):
+                    self.state = 21
                     self.expr()
-                    self.state = 24
+                    self.state = 26
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 25
+                self.state = 27
                 self.match(schemeParser.T__2)
                 pass
             else:

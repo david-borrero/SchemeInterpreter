@@ -7,6 +7,8 @@ from schemeVisitor import schemeVisitor
 
 from functools import reduce
 
+#TODO: Mirar perque falla el let amb el read
+
 class EvalVisitor(schemeVisitor):
     def __init__(self):
         #TODO: Separar les ops en sumes... i comparacions 
@@ -40,15 +42,15 @@ class EvalVisitor(schemeVisitor):
     def current_context(self):
         # Devuelve el contexto actual (local más global)
         if self.call_stack:
-            return {**self.global_variables, **self.call_stack[-1]}
-        return self.global_variables
+            return {**self.variables, **self.call_stack[-1]}
+        return self.variables
 
     def update_context(self, var, value):
         # Actualiza una variable en el contexto actual
         if self.call_stack:
             self.call_stack[-1][var] = value
         else:
-            self.global_variables[var] = value
+            self.variables[var] = value
 
     def visitRoot(self, ctx):
         results = []
@@ -59,8 +61,13 @@ class EvalVisitor(schemeVisitor):
         return results
     
     def visitLlamada(self, ctx):
-        [_, name, *args, _] = ctx.getChildren()
+        [comita, name, *args, _] = ctx.getChildren()
         name = name.getText()
+        
+        if comita.getText() == '\'':
+            # Lista
+            args = [self.visit(arg) for arg in args]
+            return args
 
         if name == 'define':
             first_arg = args[0]
@@ -68,20 +75,61 @@ class EvalVisitor(schemeVisitor):
             if first_arg.getChildCount() > 0 and first_arg.getChild(0).getText() == '(':
                 # Caso de definición de función
                 [_, func_name, *params, __] = first_arg.getChildren()
+
                 func_name = func_name.getText()
                 params = [p.getText() for p in params]
-                body = args[1]
+
+                [_, *body] = args
 
                 # Guardar la función como (parámetros, cuerpo)
                 self.funcions[func_name] = (params, body)
+
             else:
                 # Definición de variable
-                [_, identificador, valor, __] = args
-                identificador = identificador.getText()
-                valor = self.visit(valor)
-                self.global_variables[identificador] = valor
+                [identificador, valor] = args
+
+                if valor.getChildCount() > 0 and valor.getChild(0).getText() == '\'':
+                    # lista
+                    [_, _, *valores, __] = valor.getChildren()
+                    valores = [self.visit(v) for v in valores]
+                    self.global_variables[identificador.getText()] = valores
+
+                else:
+                    valor = self.visit(valor)
+                    self.global_variables[identificador.getText()] = valor
 
             return None
+        
+        elif name == 'let':
+            # Crear un nuevo contexto para las variables locales
+            self.push_context()
+            
+            for arg in args:
+                print(arg.getText())
+
+            [variables, *body] = args
+            [_, *variables, __] = variables.getChildren()
+
+            
+            for var in variables:
+                [_, identificador, valor, _] = var.getChildren()
+            
+                print(valor.getText())
+                valor = self.visit(valor)
+                self.update_context(identificador.getText(), valor)
+            
+            for expr in body:
+                result = self.visit(expr)
+
+            # Restaurar el contexto anterior
+            self.pop_context()
+
+            return result
+        
+        elif name == 'read':
+            # Leer un valor de la consola
+            valor = InputStream(input())
+            return valor
         
         elif name == 'if':
             # Evaluar el `if`
@@ -93,10 +141,64 @@ class EvalVisitor(schemeVisitor):
                 return self.visit(args[1])  # Expresión si verdadero
             else:
                 return self.visit(args[2])  # Expresión si falso
+            
+        elif name == 'cond':
+            # Evaluar el `cond`
+            for arg in args:
+                [_, condicion, expresion, _] = arg.getChildren()
+                condicion = self.visit(condicion)
+                if condicion:
+                    return self.visit(expresion)
+            
+        elif name == 'car':
+            # Devuelve el primer elemento de una lista
+            [lista] = args
+            lista = self.visit(lista)
+            return lista[0]
+        
+        elif name == 'cdr':
+            # Devuelve todos los elementos de una lista excepto el primero
+            [lista] = args
+            lista = self.visit(lista)
+            return lista[1:]
+
+        elif name == 'cons':
+            # Agrega un elemento al principio de una lista
+            [elemento, lista] = args
+            elemento = self.visit(elemento)
+            lista = self.visit(lista)
+            return [elemento] + lista
+
+        elif name == 'null?':
+            # Comprueba si una lista está vacía
+            [lista] = args
+            lista = self.visit(lista)
+            return len(lista) == 0
+        
+        elif name == 'display':
+            # Mostrar un valor en la consola
+            [valor] = args
+            
+            valor = self.visit(valor)
+
+            if valor == False:
+                print('#f')
+            elif valor == True:
+                print('#t')
+            else:
+                print(valor)
+        
+        elif name == 'and':
+            # Evaluar una serie de expresiones lógicas con `and`
+            for arg in args:
+                if not self.visit(arg):
+                    return False
+            return True
 
         elif name in self.funcions:
             # Llamada a una función definida por el usuario
             params, body = self.funcions[name]
+
             args = [self.visit(arg) for arg in args]
 
             if len(params) != len(args):
@@ -137,8 +239,17 @@ class EvalVisitor(schemeVisitor):
         name = ctx.getText()
         if name in self.current_context():
             return self.current_context()[name]
+        elif name in self.global_variables:
+            return self.global_variables[name]
         else:
             raise Exception(f"Variable no definida: {name}")
+        
+    def visitTrue(self, ctx):
+        return True
+
+    def visitFalse(self, ctx):
+        return False
+
 
 
 
