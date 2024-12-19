@@ -7,8 +7,6 @@ from schemeVisitor import schemeVisitor
 
 from functools import reduce
 
-#TODO: Mirar perque falla el let amb el read
-
 class EvalVisitor(schemeVisitor):
     def __init__(self):
         #TODO: Separar les ops en sumes... i comparacions 
@@ -69,6 +67,7 @@ class EvalVisitor(schemeVisitor):
             args = [self.visit(arg) for arg in args]
             return args
 
+
         if name == 'define':
             first_arg = args[0]
             
@@ -103,18 +102,13 @@ class EvalVisitor(schemeVisitor):
         elif name == 'let':
             # Crear un nuevo contexto para las variables locales
             self.push_context()
-            
-            for arg in args:
-                print(arg.getText())
 
             [variables, *body] = args
             [_, *variables, __] = variables.getChildren()
 
-            
             for var in variables:
                 [_, identificador, valor, _] = var.getChildren()
             
-                print(valor.getText())
                 valor = self.visit(valor)
                 self.update_context(identificador.getText(), valor)
             
@@ -129,7 +123,11 @@ class EvalVisitor(schemeVisitor):
         elif name == 'read':
             # Leer un valor de la consola
             valor = InputStream(input())
-            return valor
+            lexer = schemeLexer(valor)
+            token_stream = CommonTokenStream(lexer)
+            parser = schemeParser(token_stream)
+            tree = parser.root()
+            return self.visit(tree)[0]
         
         elif name == 'if':
             # Evaluar el `if`
@@ -187,6 +185,13 @@ class EvalVisitor(schemeVisitor):
                 print('#t')
             else:
                 print(valor)
+
+            return None
+
+        elif name == 'newline':
+            # Imprimir una nueva línea
+            print()
+            return None
         
         elif name == 'and':
             # Evaluar una serie de expresiones lógicas con `and`
@@ -194,6 +199,22 @@ class EvalVisitor(schemeVisitor):
                 if not self.visit(arg):
                     return False
             return True
+        
+        elif name == 'or':
+            # Evaluar una serie de expresiones lógicas con `or`
+            
+            for arg in args:
+                if self.visit(arg):
+                    return True
+            return False
+        
+        elif name == 'not':
+            # Negar una expresión lógica
+            if len(args) != 1:
+                raise Exception("La funció `not` requereix 1 argument")
+
+            [arg] = args
+            return not self.visit(arg)
 
         elif name in self.funcions:
             # Llamada a una función definida por el usuario
@@ -212,12 +233,45 @@ class EvalVisitor(schemeVisitor):
                 self.update_context(param, arg)
 
             # Evaluar el cuerpo de la función
-            result = self.visit(body)
+            for expr in body:
+                result = self.visit(expr)
 
             # Restaurar el contexto anterior
             self.pop_context()
 
             return result
+        
+        elif name in self.current_context():
+            func = self.current_context()[name]
+            args = [self.visit(arg) for arg in args]
+
+            if isinstance(func, tuple):
+                # Es una función definida por el usuario
+                params, body = func
+
+                if len(params) != len(args):
+                    raise Exception(f"La función '{name}' esperaba {len(params)} argumentos, pero recibió {len(args)}.")
+
+                # Crear un nuevo contexto para la función
+                self.push_context()
+
+                # Asocia parámetros con argumentos
+                for param, arg in zip(params, args):
+                    self.update_context(param, arg)
+
+                # Evalúa el cuerpo de la función
+                for expr in body:
+                    result = self.visit(expr)
+
+                # Restaura el contexto
+                self.pop_context()
+
+                return result
+            elif callable(func):
+                # Es una función Python incorporada o pasada como argumento
+                return func(*args)
+            else:
+                raise Exception(f"El nombre '{name}' no es una función válida.")
 
         elif name in self.operators:
             # Evaluar operadores
@@ -237,7 +291,10 @@ class EvalVisitor(schemeVisitor):
     
     def visitIdentificador(self, ctx):
         name = ctx.getText()
-        if name in self.current_context():
+        if name in self.funcions:
+            # Si el identificador está en funciones, devuelve la función
+            return self.funcions[name]
+        elif name in self.current_context():
             return self.current_context()[name]
         elif name in self.global_variables:
             return self.global_variables[name]
@@ -253,7 +310,7 @@ class EvalVisitor(schemeVisitor):
 
 
 
-input_stream = StdinStream()
+input_stream = FileStream('./entrada.scm')
 lexer = schemeLexer(input_stream)
 token_stream = CommonTokenStream(lexer)
 parser = schemeParser(token_stream)
@@ -262,7 +319,4 @@ tree = parser.root()
 # print(tree.toStringTree(recog=parser))
 
 evaluator = EvalVisitor()
-result = evaluator.visit(tree)
-
-print(result)
-
+evaluator.visit(tree)
