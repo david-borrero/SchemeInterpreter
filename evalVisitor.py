@@ -7,6 +7,8 @@ from schemeVisitor import schemeVisitor
 
 from functools import reduce
 
+#TODO: Revisar el makefile
+
 class EvalVisitor(schemeVisitor):
     def __init__(self):
         #TODO: Separar les ops en sumes... i comparacions 
@@ -144,8 +146,11 @@ class EvalVisitor(schemeVisitor):
             # Evaluar el `cond`
             for arg in args:
                 [_, condicion, expresion, _] = arg.getChildren()
-                condicion = self.visit(condicion)
-                if condicion:
+
+                if condicion.getText() == 'else':
+                    return self.visit(expresion)
+
+                if self.visit(condicion):
                     return self.visit(expresion)
             
         elif name == 'car':
