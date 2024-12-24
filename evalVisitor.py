@@ -1,19 +1,19 @@
-# Ejemplo de uso
-from antlr4 import *
-
-from schemeLexer import schemeLexer
-from schemeParser import schemeParser
+# eval_visitor.py
 from schemeVisitor import schemeVisitor
-
 from functools import reduce
 
-#TODO: Revisar el makefile
+from antlr4 import CommonTokenStream
 
 class EvalVisitor(schemeVisitor):
     def __init__(self):
-        #TODO: Separar les ops en sumes... i comparacions 
+        self.operators = self.initialize_operators()
+        self.global_variables = {}
+        self.variables = {}
+        self.funcions = {}
+        self.call_stack = []
 
-        self.operators = {
+    def initialize_operators(self):
+        return {
             '+': lambda x, y: x + y,
             '-': lambda x, y: x - y,
             '*': lambda x, y: x * y,
@@ -25,28 +25,20 @@ class EvalVisitor(schemeVisitor):
             '=': lambda x, y: x == y,
             '<>': lambda x, y: x != y
         }
-        self.global_variables = {}
-        self.variables = {}
-        self.funcions = {}
-        self.call_stack = []
 
     def push_context(self):
-        # Añade un nuevo marco de variables locales
         self.call_stack.append({})
 
     def pop_context(self):
-        # Elimina el marco superior
         if self.call_stack:
             self.call_stack.pop()
 
     def current_context(self):
-        # Devuelve el contexto actual (local más global)
         if self.call_stack:
             return {**self.variables, **self.call_stack[-1]}
         return self.variables
 
     def update_context(self, var, value):
-        # Actualiza una variable en el contexto actual
         if self.call_stack:
             self.call_stack[-1][var] = value
         else:
@@ -59,269 +51,200 @@ class EvalVisitor(schemeVisitor):
             if result is not None:
                 results.append(result)
         return results
-    
+
     def visitLlamada(self, ctx):
         [comita, name, *args, _] = ctx.getChildren()
         name = name.getText()
         
         if comita.getText() == '\'':
-            # Lista
-            args = [self.visit(arg) for arg in args]
-            return args
-
+            return self.handle_list(args)
 
         if name == 'define':
-            first_arg = args[0]
-            
-            if first_arg.getChildCount() > 0 and first_arg.getChild(0).getText() == '(':
-                # Caso de definición de función
-                [_, func_name, *params, __] = first_arg.getChildren()
+            return self.handle_define(args)
 
-                func_name = func_name.getText()
-                params = [p.getText() for p in params]
+        if name == 'let':
+            return self.handle_let(args)
 
-                [_, *body] = args
+        if name == 'read':
+            return self.handle_read()
 
-                # Guardar la función como (parámetros, cuerpo)
-                self.funcions[func_name] = (params, body)
+        if name == 'if':
+            return self.handle_if(args)
 
-            else:
-                # Definición de variable
-                [identificador, valor] = args
+        if name == 'cond':
+            return self.handle_cond(args)
 
-                if valor.getChildCount() > 0 and valor.getChild(0).getText() == '\'':
-                    # lista
-                    [_, _, *valores, __] = valor.getChildren()
-                    valores = [self.visit(v) for v in valores]
-                    self.global_variables[identificador.getText()] = valores
+        if name in ['car', 'cdr', 'cons', 'null?']:
+            return self.handle_list_operations(name, args)
 
-                else:
-                    valor = self.visit(valor)
-                    self.global_variables[identificador.getText()] = valor
+        if name in ['display', 'newline']:
+            return self.handle_output(name, args)
 
-            return None
-        
-        elif name == 'let':
-            # Crear un nuevo contexto para las variables locales
-            self.push_context()
+        if name in ['and', 'or', 'not']:
+            return self.handle_logic_operations(name, args)
 
-            [variables, *body] = args
-            [_, *variables, __] = variables.getChildren()
+        if name in self.funcions:
+            return self.call_user_function(name, args)
 
-            for var in variables:
-                [_, identificador, valor, _] = var.getChildren()
-            
-                valor = self.visit(valor)
-                self.update_context(identificador.getText(), valor)
-            
-            for expr in body:
-                result = self.visit(expr)
+        if name in self.current_context():
+            return self.call_context_function(name, args)
 
-            # Restaurar el contexto anterior
-            self.pop_context()
+        if name in self.operators:
+            return self.handle_operator(name, args)
 
-            return result
-        
-        elif name == 'read':
-            # Leer un valor de la consola
-            valor = InputStream(input())
-            lexer = schemeLexer(valor)
-            token_stream = CommonTokenStream(lexer)
-            parser = schemeParser(token_stream)
-            tree = parser.root()
-            return self.visit(tree)[0]
-        
-        elif name == 'if':
-            # Evaluar el `if`
-            if len(args) != 3:
-                raise Exception("La expresión `if` requiere 3 argumentos: condición, verdadero, falso")
+        raise Exception(f"Nombre no reconocido: {name}")
 
-            condicion = self.visit(args[0])
-            if condicion:  # Evaluar la condición
-                return self.visit(args[1])  # Expresión si verdadero
-            else:
-                return self.visit(args[2])  # Expresión si falso
-            
-        elif name == 'cond':
-            # Evaluar el `cond`
-            for arg in args:
-                [_, condicion, expresion, _] = arg.getChildren()
+    def handle_list(self, args):
+        return [self.visit(arg) for arg in args]
 
-                if condicion.getText() == 'else':
-                    return self.visit(expresion)
+    def handle_define(self, args):
+        first_arg = args[0]
+        if first_arg.getChildCount() > 0 and first_arg.getChild(0).getText() == '(':
+            self.define_function(args)
+        else:
+            self.define_variable(args)
 
-                if self.visit(condicion):
-                    return self.visit(expresion)
-            
-        elif name == 'car':
-            # Devuelve el primer elemento de una lista
-            [lista] = args
-            lista = self.visit(lista)
-            return lista[0]
-        
-        elif name == 'cdr':
-            # Devuelve todos los elementos de una lista excepto el primero
-            [lista] = args
-            lista = self.visit(lista)
-            return lista[1:]
+    def define_function(self, args):
+        [_, func_name, *params, __] = args[0].getChildren()
+        func_name = func_name.getText()
+        params = [p.getText() for p in params]
+        [_, *body] = args
+        self.funcions[func_name] = (params, body)
 
-        elif name == 'cons':
-            # Agrega un elemento al principio de una lista
-            [elemento, lista] = args
-            elemento = self.visit(elemento)
-            lista = self.visit(lista)
-            return [elemento] + lista
-
-        elif name == 'null?':
-            # Comprueba si una lista está vacía
-            [lista] = args
-            lista = self.visit(lista)
-            return len(lista) == 0
-        
-        elif name == 'display':
-            # Mostrar un valor en la consola
-            [valor] = args
-            
+    def define_variable(self, args):
+        [identificador, valor] = args
+        if valor.getChildCount() > 0 and valor.getChild(0).getText() == '\'':
+            [_, _, *valores, __] = valor.getChildren()
+            valores = [self.visit(v) for v in valores]
+            self.global_variables[identificador.getText()] = valores
+        else:
             valor = self.visit(valor)
+            self.global_variables[identificador.getText()] = valor
 
-            if valor == False:
-                print('#f')
-            elif valor == True:
-                print('#t')
-            else:
-                print(valor)
+    def handle_let(self, args):
+        self.push_context()
+        [variables, *body] = args
+        [_, *variables, __] = variables.getChildren()
+        for var in variables:
+            [_, identificador, valor, _] = var.getChildren()
+            valor = self.visit(valor)
+            self.update_context(identificador.getText(), valor)
+        result = None
+        for expr in body:
+            result = self.visit(expr)
+        self.pop_context()
+        return result
 
-            return None
+    def handle_read(self):
+        from schemeLexer import schemeLexer
+        from schemeParser import schemeParser
+        from antlr4 import InputStream
 
+        valor = InputStream(input())
+        lexer = schemeLexer(valor)
+        token_stream = CommonTokenStream(lexer)
+        parser = schemeParser(token_stream)
+        tree = parser.root()
+        
+        return self.visit(tree)[0]
+
+    def handle_if(self, args):
+        if len(args) != 3:
+            raise Exception("La expresión `if` requiere 3 argumentos: condición, verdadero, falso")
+        condicion = self.visit(args[0])
+        return self.visit(args[1] if condicion else args[2])
+
+    def handle_cond(self, args):
+        for arg in args:
+            [_, condicion, expresion, _] = arg.getChildren()
+            if condicion.getText() == 'else' or self.visit(condicion):
+                return self.visit(expresion)
+
+    def handle_list_operations(self, name, args):
+        lista = self.visit(args[0])
+        if name == 'car':
+            return lista[0]
+        if name == 'cdr':
+            return lista[1:]
+        if name == 'cons':
+            elemento = self.visit(args[0])
+            return [elemento] + lista
+        if name == 'null?':
+            return len(lista) == 0
+
+    def handle_output(self, name, args):
+        if name == 'display':
+            valor = self.visit(args[0])
+            print('#f' if valor is False else '#t' if valor is True else valor, end='')
         elif name == 'newline':
-            # Imprimir una nueva línea
             print()
-            return None
-        
-        elif name == 'and':
-            # Evaluar una serie de expresiones lógicas con `and`
-            for arg in args:
-                if not self.visit(arg):
-                    return False
-            return True
-        
-        elif name == 'or':
-            # Evaluar una serie de expresiones lógicas con `or`
-            
-            for arg in args:
-                if self.visit(arg):
-                    return True
-            return False
-        
-        elif name == 'not':
-            # Negar una expresión lógica
+
+    def handle_logic_operations(self, name, args):
+        if name == 'and':
+            return all(self.visit(arg) for arg in args)
+        if name == 'or':
+            return any(self.visit(arg) for arg in args)
+        if name == 'not':
             if len(args) != 1:
-                raise Exception("La funció `not` requereix 1 argument")
+                raise Exception("La función `not` requiere 1 argumento")
+            return not self.visit(args[0])
 
-            [arg] = args
-            return not self.visit(arg)
+    def call_user_function(self, name, args):
+        params, body = self.funcions[name]
+        args = [self.visit(arg) for arg in args]
+        if len(params) != len(args):
+            raise Exception(f"La función '{name}' esperaba {len(params)} argumentos, pero recibió {len(args)}.")
+        self.push_context()
+        for param, arg in zip(params, args):
+            self.update_context(param, arg)
+        result = None
+        for expr in body:
+            result = self.visit(expr)
+        self.pop_context()
+        return result
 
-        elif name in self.funcions:
-            # Llamada a una función definida por el usuario
-            params, body = self.funcions[name]
-
-            args = [self.visit(arg) for arg in args]
-
+    def call_context_function(self, name, args):
+        func = self.current_context()[name]
+        args = [self.visit(arg) for arg in args]
+        if isinstance(func, tuple):
+            params, body = func
             if len(params) != len(args):
                 raise Exception(f"La función '{name}' esperaba {len(params)} argumentos, pero recibió {len(args)}.")
-
-            # Crear un nuevo contexto para la llamada
             self.push_context()
-
-            # Asignar los argumentos a los parámetros en el nuevo contexto
             for param, arg in zip(params, args):
                 self.update_context(param, arg)
-
-            # Evaluar el cuerpo de la función
+            result = None
             for expr in body:
                 result = self.visit(expr)
-
-            # Restaurar el contexto anterior
             self.pop_context()
-
             return result
-        
-        elif name in self.current_context():
-            func = self.current_context()[name]
-            args = [self.visit(arg) for arg in args]
+        if callable(func):
+            return func(*args)
+        raise Exception(f"El nombre '{name}' no es una función válida.")
 
-            if isinstance(func, tuple):
-                # Es una función definida por el usuario
-                params, body = func
+    def handle_operator(self, name, args):
+        op = self.operators[name]
+        args = [self.visit(arg) for arg in args]
+        return reduce(op, args)
 
-                if len(params) != len(args):
-                    raise Exception(f"La función '{name}' esperaba {len(params)} argumentos, pero recibió {len(args)}.")
-
-                # Crear un nuevo contexto para la función
-                self.push_context()
-
-                # Asocia parámetros con argumentos
-                for param, arg in zip(params, args):
-                    self.update_context(param, arg)
-
-                # Evalúa el cuerpo de la función
-                for expr in body:
-                    result = self.visit(expr)
-
-                # Restaura el contexto
-                self.pop_context()
-
-                return result
-            elif callable(func):
-                # Es una función Python incorporada o pasada como argumento
-                return func(*args)
-            else:
-                raise Exception(f"El nombre '{name}' no es una función válida.")
-
-        elif name in self.operators:
-            # Evaluar operadores
-            op = self.operators[name]
-            args = [self.visit(arg) for arg in args]
-            return reduce(op, args)
-
-        else:
-            raise Exception(f"Nombre no reconocido: {name}")
-
-    
     def visitNumero(self, ctx):
         return int(ctx.getText())
-    
+
     def visitText(self, ctx):
         return ctx.getText()[1:-1]
-    
+
     def visitIdentificador(self, ctx):
         name = ctx.getText()
         if name in self.funcions:
-            # Si el identificador está en funciones, devuelve la función
             return self.funcions[name]
-        elif name in self.current_context():
+        if name in self.current_context():
             return self.current_context()[name]
-        elif name in self.global_variables:
+        if name in self.global_variables:
             return self.global_variables[name]
-        else:
-            raise Exception(f"Variable no definida: {name}")
-        
+        raise Exception(f"Variable no definida: {name}")
+
     def visitTrue(self, ctx):
         return True
 
     def visitFalse(self, ctx):
         return False
-
-
-
-
-input_stream = FileStream('./entrada.scm')
-lexer = schemeLexer(input_stream)
-token_stream = CommonTokenStream(lexer)
-parser = schemeParser(token_stream)
-tree = parser.root()
-
-# print(tree.toStringTree(recog=parser))
-
-evaluator = EvalVisitor()
-evaluator.visit(tree)
