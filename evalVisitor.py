@@ -2,7 +2,15 @@
 from schemeVisitor import schemeVisitor
 from functools import reduce
 
-from antlr4 import CommonTokenStream
+from antlr4 import *
+from schemeLexer import schemeLexer
+from schemeParser import schemeParser
+import sys
+
+#TODO: Implementar el makefile
+#TODO: Joc de proves
+#TODO: Documentar
+#TODO: Funcionalitats extra
 
 class EvalVisitor(schemeVisitor):
     def __init__(self):
@@ -11,6 +19,8 @@ class EvalVisitor(schemeVisitor):
         self.variables = {}
         self.funcions = {}
         self.call_stack = []
+        self.input_lines = []  # Almacena todas las líneas de entrada
+        self.input_index = 0   # Índice de la línea actual
 
     def initialize_operators(self):
         return {
@@ -18,6 +28,7 @@ class EvalVisitor(schemeVisitor):
             '-': lambda x, y: x - y,
             '*': lambda x, y: x * y,
             '/': lambda x, y: x // y,
+            'mod': lambda x, y: x % y,
             '>': lambda x, y: x > y,
             '<': lambda x, y: x < y,
             '>=': lambda x, y: x >= y,
@@ -45,16 +56,22 @@ class EvalVisitor(schemeVisitor):
             self.variables[var] = value
 
     def visitRoot(self, ctx):
-        results = []
+        self.input_lines = sys.stdin.read().strip().splitlines()
+        self.input_index = 0  # Reiniciar índice por si se reutiliza el visitor
+
         for child in ctx.getChildren():
-            result = self.visit(child)
-            if result is not None:
-                results.append(result)
-        return results
+            self.visit(child)
+        
+        if "main" in self.funcions:
+            return self.call_user_function("main", [])
+            
 
     def visitLlamada(self, ctx):
         [comita, name, *args, _] = ctx.getChildren()
         name = name.getText()
+
+
+        # print("Calling function", name, [arg.getText() for arg in args])
         
         if comita.getText() == '\'':
             return self.handle_list(args)
@@ -136,17 +153,17 @@ class EvalVisitor(schemeVisitor):
         return result
 
     def handle_read(self):
-        from schemeLexer import schemeLexer
-        from schemeParser import schemeParser
-        from antlr4 import InputStream
+        if self.input_index < len(self.input_lines):
+            # Leer la línea actual y avanzar el índice
+            line = self.input_lines[self.input_index]
+            self.input_index += 1
 
-        valor = InputStream(input())
-        lexer = schemeLexer(valor)
-        token_stream = CommonTokenStream(lexer)
-        parser = schemeParser(token_stream)
-        tree = parser.root()
-        
-        return self.visit(tree)[0]
+            # Convertir la línea a un número si es posible
+            try:
+                return int(line)
+            except ValueError:
+                return line
+
 
     def handle_if(self, args):
         if len(args) != 3:
