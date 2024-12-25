@@ -19,6 +19,7 @@ ID: [a-zA-Z] [a-zA-Z0-9?\-]*;
 STRING : '"' (~[\r\n"] | '""')* '"';
 TRUE : '#t';
 FALSE : '#f';
-WS : [ \t\r\n]+ -> skip;
 
+WS : [ \t\r\n]+ -> skip;
+COMMENT : ';' ~[\r\n]* -> skip;
 

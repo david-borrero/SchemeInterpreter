@@ -158,12 +158,17 @@ class EvalVisitor(schemeVisitor):
             line = self.input_lines[self.input_index]
             self.input_index += 1
 
-            # Convertir la línea a un número si es posible
+            if line == '#t':
+                return True
+            if line == '#f':
+                return False
+            if line[0] == '\'' and line[1] == '(':
+                return [int(x) if x.isdigit() else x for x in line[2:-1].split()]
+            
             try:
                 return int(line)
             except ValueError:
                 return line
-
 
     def handle_if(self, args):
         if len(args) != 3:
@@ -178,6 +183,8 @@ class EvalVisitor(schemeVisitor):
                 return self.visit(expresion)
 
     def handle_list_operations(self, name, args):
+        
+
         lista = self.visit(args[0])
         if name == 'car':
             return lista[0]
@@ -185,6 +192,8 @@ class EvalVisitor(schemeVisitor):
             return lista[1:]
         if name == 'cons':
             elemento = self.visit(args[0])
+            lista = self.visit(args[1])
+
             return [elemento] + lista
         if name == 'null?':
             return len(lista) == 0
@@ -192,6 +201,17 @@ class EvalVisitor(schemeVisitor):
     def handle_output(self, name, args):
         if name == 'display':
             valor = self.visit(args[0])
+
+            if (isinstance(valor, list)):
+                print("'(", end='')
+                for i, v in enumerate(valor):
+                    print(v, end='')
+                    if i < len(valor) - 1:
+                        print(' ', end='')
+                print(')', end='')
+
+                return
+
             print('#f' if valor is False else '#t' if valor is True else valor, end='')
         elif name == 'newline':
             print()
