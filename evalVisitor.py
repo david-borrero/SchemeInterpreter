@@ -9,8 +9,8 @@ import sys
 
 #TODO: Implementar el makefile
 #TODO: Joc de proves
+#TODO: fer el read be
 #TODO: Documentar
-#TODO: Funcionalitats extra
 
 class EvalVisitor(schemeVisitor):
     def __init__(self):
@@ -70,7 +70,6 @@ class EvalVisitor(schemeVisitor):
         [comita, name, *args, _] = ctx.getChildren()
         name = name.getText()
 
-
         # print("Calling function", name, [arg.getText() for arg in args])
         
         if comita.getText() == '\'':
@@ -78,6 +77,9 @@ class EvalVisitor(schemeVisitor):
 
         if name == 'define':
             return self.handle_define(args)
+        
+        if  name == 'lamda':
+            return self.handle_lamda(args)
 
         if name == 'let':
             return self.handle_let(args)
@@ -120,6 +122,11 @@ class EvalVisitor(schemeVisitor):
             self.define_function(args)
         else:
             self.define_variable(args)
+    
+    def handle_lamda(self, args):
+        for arg in args:
+            arg.text = arg.getText()
+            print(arg.text)
 
     def define_function(self, args):
         [_, func_name, *params, __] = args[0].getChildren()
@@ -262,7 +269,14 @@ class EvalVisitor(schemeVisitor):
     def handle_operator(self, name, args):
         op = self.operators[name]
         args = [self.visit(arg) for arg in args]
-        return reduce(op, args)
+
+        if name in ['<', '>', '<=', '>=', '=', '<>']:
+            if len(args) < 2:
+                raise Exception(f"L\'operador '{name}' requereix mínim 2 arguments.")
+            
+            return reduce(lambda acc, pair: acc and self.operators[name](pair[0], pair[1]), zip(args, args[1:]), True)
+        else:
+            return reduce(op, args)
 
     def visitNumero(self, ctx):
         return int(ctx.getText())

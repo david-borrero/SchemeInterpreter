@@ -37,3 +37,9 @@
 (newline)
 (display (<> b c))
 (newline)
+
+(display (< a b c))
+(newline)
+
+(display (<= a b c))
+(newline)
