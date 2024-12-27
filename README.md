@@ -57,9 +57,7 @@ Aquest codi implementa dues funcions simples per operar amb nombres enters: una 
 El codi utilitza les funcions `display` i `newline` per imprimir els resultats de les operacions i `read` per introduïr els valors:
 
 ```scheme
-(display "Introdueix el primer número: ")
 (define x (read))
-(display "Introdueix el segon número: ")
 (define y (read))
 
 (display "La suma és: ")
@@ -74,8 +72,325 @@ El codi utilitza les funcions `display` i `newline` per imprimir els resultats d
 ###### Resultat esperat:
 
 - Primer es mostra la suma de `5` i `7` (que és `12`).
-- Després es mostra el producte de `4` i `6` (que és `24`).
+- Després es mostra el producte de `5` i `7` (que és `35`).
 - Cada resultat apareix en una nova línia.
+
+### Funcions d'Alt Ordre
+
+#### Introducció
+
+Aquest codi implementa funcions d'ordre superior per treballar amb llistes, incloent les clàssiques operacions `map` i `filter`, a més de definir funcions per operar amb nombres i una funció `main` per mostrar un exemple.
+
+#### Contingut del codi
+
+##### Definicions de les funcions
+
+1. **Funció `filter`**
+
+   ```scheme
+   (define (filter predicat llista)
+     (cond
+       ((null? llista) '())
+       ((predicat (car llista))
+        (cons (car llista) (filter predicat (cdr llista))))
+       (#t (filter predicat (cdr llista)))))
+   ```
+
+   Aquesta funció pren un predicat i una llista, i retorna una nova llista amb els elements que compleixen el predicat.
+
+2. **Funció `map`**
+
+   ```scheme
+   (define (map func llista)
+     (cond
+       ((null? llista) '())
+       (else (cons (func (car llista)) (map func (cdr llista))))))
+   ```
+
+   Aquesta funció aplica una funció a cada element d'una llista i retorna una nova llista amb els resultats.
+
+3. **Funció `parell?`**
+
+   ```scheme
+   (define (parell? x) (= (mod x 2) 0))
+   ```
+
+   Aquesta funció determina si un nombre és parell.
+
+4. **Funció `triplica`**
+
+   ```scheme
+   (define (triplica x) (* x 3))
+   ```
+
+   Multiplica un nombre per 3.
+
+5. **Funció `main`**
+
+   ```scheme
+   (define (main)
+       (display (map triplica (filter parell? '(1 2 3 4 5 6 7 8 9 10)))))
+   ```
+
+   Aquesta funció mostra els resultats de filtrar els nombres parells d'una llista i triplicar-los.
+
+##### Mostra dels resultats
+
+Quan s'executa la funció `main`, el resultat esperat és:
+
+```
+(6 12 18 24 30)
+```
+
+Aquest resultat correspon als nombres parells de la llista inicial `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`, després de ser triplicats.
+
+### Funcions Recursives
+
+#### Introducció
+
+Aquest codi implementa dues funcions recursives per a càlculs matemàtics: una per calcular el factorial d'un nombre i una altra per trobar el màxim comú divisor (MCD) entre dos nombres. També inclou una funció `main` per mostrar exemples d'execució interactivament.
+
+#### Contingut del codi
+
+##### Definicions de les funcions
+
+1. **Funció `factorial`**
+
+   ```scheme
+   (define (factorial n)
+     (if (= n 0)
+         1
+         (* n (factorial (- n 1)))))
+   ```
+
+   Aquesta funció calcula el factorial d'un nombre enter `n`. Si `n` és 0, retorna 1. En cas contrari, retorna `n` multiplicat pel factorial de `n - 1`.
+
+2. **Funció `mcd`**
+
+   ```scheme
+   (define (mcd a b)
+     (if (= b 0)
+         a
+         (mcd b (mod a b))))
+   ```
+
+   Aquesta funció calcula el màxim comú divisor de dos nombres enters `a` i `b` utilitzant l'algorisme d'Euclides.
+
+3. **Funció `main`**
+
+   ```scheme
+   (define (main)
+     (let ((a (read))
+           (b (read)))
+       (display "El maxim comu divisor es: ")
+       (display (mcd a b))
+       (newline))
+     (let ((n (read)))
+       (display "El factorial es: ")
+       (display (factorial n))
+       (newline)))
+   ```
+
+   Aquesta funció interactua amb l'usuari per:
+
+   - Llegir dos nombres i calcular-ne el MCD utilitzant la funció `mcd`.
+   - Llegir un tercer nombre i calcular-ne el factorial amb la funció `factorial`.
+
+##### Mostra dels resultats
+
+Quan s'executa la funció `main`, l'usuari pot introduir valors i obtenir resultats. Per exemple:
+
+1. Si l'usuari introdueix `48` i `18`:
+
+   ```
+   El maxim comu divisor es: 6
+   ```
+
+2. Si l'usuari introdueix `5` per al factorial:
+   ```
+   El factorial es: 120
+   ```
+
+Aquestes sortides il·lustren els càlculs del MCD i el factorial basats en els valors introduïts per l'usuari.
+
+### Operacions amb Llistes
+
+#### Introducció
+
+Aquest codi implementa operacions bàsiques amb llistes en Scheme. Utilitza diverses funcions integrades per treballar amb llistes, com ara `car`, `cdr`, `cons` i `null?`. La funció `main` mostra exemples d'aquestes operacions interactivament.
+
+#### Contingut del codi
+
+##### Definicions de la funció
+
+1. **Funció `main`**
+
+   ```scheme
+   (define (main)
+       (let ((llista (read)))
+           (display (car llista))
+           (newline)
+           (display (cdr llista))
+           (newline)
+           (display (cons 0 llista))   ; esperat: '(0 1 2 3 4 5)
+           (newline)
+           (display (null? '()))
+           (newline)
+           (display (null? llista))
+           (newline)))
+   ```
+
+   Aquesta funció:
+
+   - Llegeix una llista introduïda per l'usuari.
+   - Mostra el primer element de la llista utilitzant `car`.
+   - Mostra la resta de la llista (sense el primer element) utilitzant `cdr`.
+   - Afegeix un element `0` al principi de la llista amb `cons`.
+   - Comprova si una llista està buida amb `null?`.
+
+##### Mostra dels resultats
+
+Quan s'executa la funció `main`, l'usuari pot introduir una llista i obtenir resultats. Per exemple:
+
+1. Si l'usuari introdueix `'(1 2 3 4 5)`:
+
+   ```
+   1
+   (2 3 4 5)
+   (0 1 2 3 4 5)
+   #t
+   #f
+   ```
+
+   - `1` és el primer element de la llista.
+   - `(2 3 4 5)` és la resta de la llista.
+   - `(0 1 2 3 4 5)` és la nova llista amb `0` al davant.
+   - `#t` indica que la llista buida (`'()`) és veritablement buida.
+   - `#f` indica que la llista introduïda no és buida.
+
+### Operacions Matemàtiques i Comparacions
+
+#### Introducció
+
+Aquest codi implementa operacions matemàtiques bàsiques i comparacions lògiques entre variables. Es defineixen tres variables (`a`, `b`, i `c`) i es mostren resultats d'operacions aritmètiques i comparatives utilitzant funcions integrades de Scheme.
+
+#### Contingut del codi
+
+##### Definicions i operacions
+
+1. **Definicions de les variables**
+
+   ```scheme
+   (define a 10)
+   (define b 20)
+   (define c 20)
+   ```
+
+   Es defineixen tres variables: `a`, `b` i `c` amb els valors `10`, `20`, i `20` respectivament.
+
+2. **Operacions matemàtiques**
+
+   ```scheme
+   (display (+ a b))
+   (newline)
+
+   (display (- b a))
+   (newline)
+
+   (display (* a b))
+   (newline)
+
+   (display (/ b a))
+   (newline)
+   ```
+
+   Aquestes operacions calculen:
+
+   - La suma de `a` i `b`.
+   - La resta de `b` menys `a`.
+   - El producte de `a` i `b`.
+   - La divisió de `b` entre `a`.
+
+3. **Comparacions**
+
+   ```scheme
+   (display (> b a))
+   (newline)
+
+   (display (< b a))
+   (newline)
+
+   (display (= b c))
+   (newline)
+
+   (display (<= b a))
+   (newline)
+   (display (<= b c))
+   (newline)
+
+   (display (>= a b))
+   (newline)
+   (display (>= b c))
+   (newline)
+   ```
+
+   Aquestes comparacions mostren:
+
+   - Si `b` és major que `a`.
+   - Si `b` és menor que `a`.
+   - Si `b` és igual a `c`.
+   - Si `b` és menor o igual a `a`.
+   - Si `b` és menor o igual a `c`.
+   - Si `a` és major o igual a `b`.
+   - Si `b` és major o igual a `c`.
+
+4. **Comparacions lògiques complexes**
+
+   ```scheme
+   (display (< a b c))
+   (newline)
+
+   (display (<= a b c))
+   (newline)
+   ```
+
+   Aquestes expressions comproven si:
+
+   - `a`, `b` i `c` estan en ordre creixent.
+   - `a`, `b` i `c` estan en ordre creixent o igual.
+
+##### Mostra dels resultats
+
+Quan s'executa aquest codi, els resultats esperats són:
+
+1. Operacions matemàtiques:
+
+   ```
+   30
+   10
+   200
+   2
+   ```
+
+2. Comparacions simples:
+
+   ```
+   #t
+   #f
+   #t
+   #f
+   #t
+   #f
+   #t
+   ```
+
+3. Comparacions complexes:
+   ```
+   #t
+   #t
+   ```
+
+Aquestes sortides mostren els resultats de les operacions aritmètiques i les verificacions lògiques aplicades a les variables `a`, `b` i `c`.
 
 ## Ús
 

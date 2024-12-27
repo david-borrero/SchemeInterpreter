@@ -1,10 +1,16 @@
 (define (suma x y)
-  (+ x y))
+    (+ x y))
 
 (define (producte x y)
-  (* x y))
+    (* x y))
 
-(display (suma 5 7))       
+(define x (read))
+(define y (read))
+
+(display "La suma es: ")
+(display (suma x y))
 (newline)
-(display (producte 4 6))  
+
+(display "El producte es: ")
+(display (producte x y))
 (newline)
