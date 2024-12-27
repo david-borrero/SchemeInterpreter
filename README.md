@@ -1,14 +1,26 @@
 # Intèrpret de Scheme
 
-Aquest projecte és un intèrpret per a un subconjunt del llenguatge Scheme, implementat en Python utilitzant ANTLR per a l'anàlisi lèxica i sintàctica.
+Aquest projecte és un intèrpret per a un subconjunt del llenguatge Scheme, implementat en Python utilitzant ANTLR per a l'anàlisi lèxica i sintàctica. Es tracta d'una implementació minimalista que simplifica el llenguatge a crides a funció i tipus bàsics, delegant la lògica de cada operació al visitador, que actua com a motor d'execució. La seva modularitat permet una extensió senzilla de les funcionalitats.
 
-## Característiques
+## Característiques del Projecte
 
-- **Anàlisi lèxic i sintàctic**: Utilitza ANTLR per generar el lexer i el parser a partir de la gramàtica `scheme.g4`.
-- **Avaluació d'expressions**: Implementa un visitant (`EvalVisitor`) que avalua les expressions del llenguatge Scheme.
-- **Suport per a operacions bàsiques**: Suporta operacions aritmètiques, lògiques i de comparació.
-- **Gestió de funcions i variables**: Permet la definició i crida de funcions i variables.
-- **Control de flux**: Implementa estructures de control com `if` i `cond`.
+### 1. Gramàtica
+La gramàtica en ANTLR defineix les regles sintàctiques bàsiques de Scheme, incloent-hi:
+- **Identificadors (`ID`)**: per a variables i funcions.
+- **Operadors (`OP`)**: com ara `+`, `-`, `*`, `>`, `=`, etc.
+- **Tipus literals**: `NUM` (números), `STRING` (text), `TRUE` i `FALSE`.
+- **Expressions compostes**: crides a funcions amb notació prefixada.
+
+### 2. Visitador
+El fitxer `eval_visitor.py` implementa la lògica d'execució mitjançant un visitador. Les funcionalitats principals inclouen:
+- **Operadors aritmètics i comparacions:** gestionats amb un diccionari d'operadors.
+- **Gestió de context:** ús d'una pila (`call_stack`) per a aïllar contextos locals durant l'execució.
+- **Llistes:** suport per a `car`, `cdr`, `cons` i `null?`.
+- **Definició de funcions i variables:** suport per a `define`, `lambda` i assignacions locals amb `let`.
+- **Control de flux:** implementació de `if`, `cond` i operadors lògics (`and`, `or`, `not`).
+
+### 3. Integració amb ANTLR
+Els fitxers generats per ANTLR (`schemeLexer.py` i `schemeParser.py`) processen el codi Scheme per produir un arbre sintàctic. Aquest arbre és recorregut pel visitador per executar les instruccions.
 
 ## Estructura del Projecte
 

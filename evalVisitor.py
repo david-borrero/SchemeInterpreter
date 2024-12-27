@@ -7,10 +7,8 @@ from schemeLexer import schemeLexer
 from schemeParser import schemeParser
 import sys
 
-#TODO: Implementar el makefile
 #TODO: Joc de proves
 #TODO: fer el read be
-#TODO: Documentar
 
 class EvalVisitor(schemeVisitor):
     def __init__(self):
