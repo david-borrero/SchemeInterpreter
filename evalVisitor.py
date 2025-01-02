@@ -54,8 +54,18 @@ class EvalVisitor(schemeVisitor):
             self.variables[var] = value
 
     def visitRoot(self, ctx):
-        self.input_lines = sys.stdin.read().strip().splitlines()
-        self.input_index = 0  # Reiniciar índice por si se reutiliza el visitor
+        read = False
+        
+        #detectar si alguno de los hijos es una llamada a read
+        for child in ctx.getChildren():
+            if isinstance(child, schemeParser.LlamadaContext):
+                if child.getChild(0).getText() == 'read':
+                    read = True
+                    break
+
+        if read:
+            self.input_lines = sys.stdin.read().strip().splitlines()
+            self.input_index = 0  # Reiniciar índice por si se reutiliza el visitor
 
         for child in ctx.getChildren():
             self.visit(child)

@@ -2,25 +2,51 @@
 
 Aquest projecte és un intèrpret per a un subconjunt del llenguatge Scheme, implementat en Python utilitzant ANTLR per a l'anàlisi lèxica i sintàctica. Es tracta d'una implementació minimalista que simplifica el llenguatge a crides a funció i tipus bàsics, delegant la lògica de cada operació al visitador, que actua com a motor d'execució. La seva modularitat permet una extensió senzilla de les funcionalitats.
 
-## Característiques del Projecte
+---
 
-### 1. Gramàtica
-La gramàtica en ANTLR defineix les regles sintàctiques bàsiques de Scheme, incloent-hi:
-- **Identificadors (`ID`)**: per a variables i funcions.
-- **Operadors (`OP`)**: com ara `+`, `-`, `*`, `>`, `=`, etc.
-- **Tipus literals**: `NUM` (números), `STRING` (text), `TRUE` i `FALSE`.
-- **Expressions compostes**: crides a funcions amb notació prefixada.
+## Decisions de Disseny
 
-### 2. Visitador
-El fitxer `eval_visitor.py` implementa la lògica d'execució mitjançant un visitador. Les funcionalitats principals inclouen:
-- **Operadors aritmètics i comparacions:** gestionats amb un diccionari d'operadors.
-- **Gestió de context:** ús d'una pila (`call_stack`) per a aïllar contextos locals durant l'execució.
-- **Llistes:** suport per a `car`, `cdr`, `cons` i `null?`.
-- **Definició de funcions i variables:** suport per a `define`, `lambda` i assignacions locals amb `let`.
-- **Control de flux:** implementació de `if`, `cond` i operadors lògics (`and`, `or`, `not`).
+### 1. Modularitat i Extensibilitat
 
-### 3. Integració amb ANTLR
-Els fitxers generats per ANTLR (`schemeLexer.py` i `schemeParser.py`) processen el codi Scheme per produir un arbre sintàctic. Aquest arbre és recorregut pel visitador per executar les instruccions.
+- **Estructura del codi**: La classe `EvalVisitor` hereta de `schemeVisitor`, permetent una implementació modular on cada mètode gestiona un tipus específic de node del parse tree.
+- **Operadors inicialitzats dinàmicament**: Les operacions aritmètiques i lògiques es defineixen en un diccionari (`initialize_operators`), facilitant l'extensió amb nous operadors sense alterar la lògica principal.
+
+### 2. Gestió de Contextos i Variables
+
+- **Pila de contextos (`call_stack`)**: Proporciona aïllament entre diferents àmbits de variables, útil per gestionar funcions i blocs com `let`.
+- **Variables globals i locals**: Es diferencien les variables globals (`global_variables`) de les locals (`variables`), assegurant una clara separació entre escops.
+
+### 3. Suport a Característiques del Llenguatge Scheme
+
+- **Gestió de funcions definides per l’usuari**:
+  - Es poden definir funcions mitjançant `define`.
+  - Els paràmetres i el cos de les funcions es guarden en un diccionari (`funcions`).
+- **Operacions amb llistes**: Implementació explícita de `car`, `cdr`, `cons` i `null?`, reflectint la importància de les llistes en Scheme.
+- **Operadors lògics i condicionals**: Suport complet per a construccions com `if`, `cond` i operadors com `and`, `or`, `not`.
+
+### 4. Interacció amb l’Usuari
+
+- **Lectura de dades (`read`)**:
+  - Les dades es llegeixen línia per línia des de l’entrada estàndard.
+  - Es processen segons el format esperat (valors booleans, enters, llistes, etc.).
+- **Sortida (`display`, `newline`)**:
+  - Suport per mostrar valors i gestionar sortides personalitzades.
+
+### 5. Robustesa
+
+- **Gestió d’errors**:
+  - Excepcions clares per a noms desconeguts, variables no definides o discrepàncies en el nombre d’arguments de les funcions.
+- **Validació d’arguments**:
+  - Els operadors i funcions validen el nombre i tipus d’arguments per evitar errors en temps d’execució.
+
+### 6. Optimització del Flux d’Execució
+
+- **Ús de `reduce`**:
+  - Per avaluar operacions que impliquen múltiples valors (sumes, comparacions encadenades, etc.), reduint la complexitat del codi.
+- **Preparació de dades d’entrada**:
+  - Es detecten operacions `read` al principi per preparar les dades abans de visitar els nodes del parse tree.
+
+---
 
 ## Estructura del Projecte
 
