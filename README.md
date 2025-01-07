@@ -501,3 +501,9 @@ O alternativament:
 ```sh
 make generate
 ```
+
+També pots netejar el teu directori dels arxius generats amb
+
+```sh
+make clean
+```
