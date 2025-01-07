@@ -98,13 +98,13 @@ El codi utilitza les funcions `display` i `newline` per imprimir els resultats d
 (define x (read))
 (define y (read))
 
-(display "La suma és: ")
-(display (suma x y))
-(newline)
-
-(display "El producte és: ")
-(display (producte x y))
-(newline)
+(define (main)
+    (let ((res1 (suma x y))
+          (res2 (producte x y)))
+        (display res1)
+        (newline)
+        (display res2)
+        (newline)))
 ```
 
 ###### Resultat esperat:
@@ -167,7 +167,8 @@ Aquest codi implementa funcions d'ordre superior per treballar amb llistes, incl
 
    ```scheme
    (define (main)
-       (display (map triplica (filter parell? '(1 2 3 4 5 6 7 8 9 10)))))
+       (display (map triplica (filter parell? '(1 2 3 4 5 6 7 8 9 10))))
+       (newline))
    ```
 
    Aquesta funció mostra els resultats de filtrar els nombres parells d'una llista i triplicar-los.
@@ -180,7 +181,7 @@ Quan s'executa la funció `main`, el resultat esperat és:
 (6 12 18 24 30)
 ```
 
-Aquest resultat correspon als nombres parells de la llista inicial `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`, després de ser triplicats.
+Aquest resultat correspon als nombres parells de la llista inicial `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`, després de ser triplicats i filtrats.
 
 ### Funcions Recursives
 
@@ -313,6 +314,51 @@ Quan s'executa la funció `main`, l'usuari pot introduir una llista i obtenir re
 Aquest codi implementa operacions matemàtiques bàsiques i comparacions lògiques entre variables. Es defineixen tres variables (`a`, `b`, i `c`) i es mostren resultats d'operacions aritmètiques i comparatives utilitzant funcions integrades de Scheme.
 
 #### Contingut del codi
+
+```scheme
+(define (main)
+   (display (+ a b))
+   (newline)
+
+   (display (- b a))
+   (newline)
+
+   (display (* a b))
+   (newline)
+
+   (display (/ b a))
+   (newline)
+
+   (display (> b a))
+   (newline)
+
+   (display (< b a))
+   (newline)
+
+   (display (= b c))
+   (newline)
+
+   (display (<= b a))
+   (newline)
+   (display (<= b c))
+   (newline)
+
+   (display (>= a b))
+   (newline)
+   (display (>= b c))
+   (newline)
+
+   (display (<> a b))
+   (newline)
+   (display (<> b c))
+   (newline)
+
+   (display (< a b c))
+   (newline)
+
+   (display (<= a b c))
+   (newline))
+```
 
 ##### Definicions i operacions
 

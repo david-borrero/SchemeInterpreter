@@ -14,4 +14,5 @@
 (define (triplica x) (* x 3))
 
 (define (main)
-    (display (map triplica (filter parell? '(1 2 3 4 5 6 7 8 9 10)))))
+    (display (map triplica (filter parell? '(1 2 3 4 5 6 7 8 9 10))))
+    (newline))

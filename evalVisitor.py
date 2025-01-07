@@ -54,31 +54,30 @@ class EvalVisitor(schemeVisitor):
             self.variables[var] = value
 
     def visitRoot(self, ctx):
-        read = False
-        
         #detectar si alguno de los hijos es una llamada a read
         for child in ctx.getChildren():
-            if isinstance(child, schemeParser.LlamadaContext):
-                if child.getChild(0).getText() == 'read':
-                    read = True
-                    break
+            if type(child).__name__ == 'TerminalNodeImpl':
+                continue
 
-        if read:
-            self.input_lines = sys.stdin.read().strip().splitlines()
-            self.input_index = 0  # Reiniciar índice por si se reutiliza el visitor
+            if not isinstance(child, schemeParser.LlamadaContext):
+                raise Exception("Fora del main, nomes es poden definir funcions i variables", child.start.line, child.start.column)
+            
+            if child.getChild(1).getText() != 'define':
+                raise Exception("Fora del main, nomes es poden definir funcions i variables ",  child.start.line, child.start.column)
+            
 
         for child in ctx.getChildren():
             self.visit(child)
         
         if "main" in self.funcions:
             return self.call_user_function("main", [])
+        else:
+            raise Exception("No se encontró la función 'main'.")
             
 
     def visitLlamada(self, ctx):
         [comita, name, *args, _] = ctx.getChildren()
         name = name.getText()
-
-        # print("Calling function", name, [arg.getText() for arg in args])
         
         if comita.getText() == '\'':
             return self.handle_list(args)
@@ -119,7 +118,7 @@ class EvalVisitor(schemeVisitor):
         if name in self.operators:
             return self.handle_operator(name, args)
 
-        raise Exception(f"Nombre no reconocido: {name}")
+        raise Exception(f"Nombre no reconocido: {name}", ctx.start.line, ctx.start.column)
 
     def handle_list(self, args):
         return [self.visit(arg) for arg in args]
@@ -129,12 +128,10 @@ class EvalVisitor(schemeVisitor):
         if first_arg.getChildCount() > 0 and first_arg.getChild(0).getText() == '(':
             self.define_function(args)
         else:
-            self.define_variable(args)
-    
-    def handle_lamda(self, args):
-        for arg in args:
-            arg.text = arg.getText()
-            print(arg.text)
+            if args[1].getText() == "(read)":
+                self.global_variables[first_arg.getText()] = self.handle_read()
+            else:
+                self.define_variable(args)
 
     def define_function(self, args):
         [_, func_name, *params, __] = args[0].getChildren()
@@ -168,6 +165,8 @@ class EvalVisitor(schemeVisitor):
         return result
 
     def handle_read(self):
+        if len(self.input_lines) == 0:
+            self.input_lines = sys.stdin.read().strip().splitlines()
         if self.input_index < len(self.input_lines):
             # Leer la línea actual y avanzar el índice
             line = self.input_lines[self.input_index]
