@@ -478,13 +478,25 @@ Aquestes sortides mostren els resultats de les operacions aritmètiques i les ve
 
 ## Ús
 
+Abans de fer-ne ús, s'han hagut de generar els arxius. Es pot usar de dos maneres:
+
 ```sh
 python3 scheme.py <arxiu> < entrada > sortida
 ```
 
-### Generar Arxius ANTLR
+```sh
+make run file=<arxiu>
+```
+
+### Generar Arxius
 
 Per generar els arxius necessaris a partir de la gramàtica `scheme.g4`, executar:
+
+```sh
+make
+```
+
+O alternativament:
 
 ```sh
 make generate
